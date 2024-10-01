@@ -22,26 +22,31 @@ public class MinesweeperGame {
 
     public static void main(String[] args) {
         showGameStartComments();
-        // Scanner SCANNER = new Scanner(System.in); 변수를 가깝게 둔다.
         initializeGame();
+
         while (true) {
-            showBoard();
+            try {
+                showBoard();
 
-            if (doesUserWinTheGame()) {
-                System.out.println("지뢰를 모두 찾았습니다. GAME CLEAR!");
-                break;
+                if (doesUserWinTheGame()) {
+                    System.out.println("지뢰를 모두 찾았습니다. GAME CLEAR!");
+                    break;
+                }
+                if (doesUserLoseTheGame()) {
+                    System.out.println("지뢰를 밟았습니다. GAME OVER!");
+                    break;
+                }
+
+                String cellInput = getCellInputFromUser();
+                String userActionInput = getUserActionInputFromUser();
+                actOnCell(cellInput, userActionInput);
+            } catch (AppException e) {
+                System.out.println(e.getMessage());
+            } catch (Exception e) {
+                // 핸들링하지 않은 의도치 않은 예외에 대하여 처리
+                System.out.println("프로그램에 문제가 생겼습니다.");
+                // e.printStackTrace(); printStackTrace는 실무에서는 안티패턴임 보통 로그시스템을 통해서 로그를 남김
             }
-
-            if (doesUserLoseTheGame()) {
-                System.out.println("지뢰를 밟았습니다. GAME OVER!");
-                break;
-            }
-
-            // Scanner SCANNER = new Scanner(System.in); 변수를 가깝게 둬야한다고 조건 탈때마다 스캐너 생기게 여기에 둘
-            // 필요는 없다. => 이 때문에 상수로 둔다.
-            String cellInput = getCellInputFromUser();
-            String userActionInput = getUserActionInputFromUser();
-            actOnCell(cellInput, userActionInput);
         }
     }
 
@@ -61,12 +66,13 @@ public class MinesweeperGame {
                 changeGameStatusToLose();
                 return;
             }
+
             open(selectedRowIndex, selectedColIndex);
             checkIfGameIsOver();
             return;
         }
 
-        System.out.println("잘못된 번호를 선택하셨습니다.");
+        throw new AppException("잘못된 번호를 선택하셨습니다.");
     }
 
     private static void changeGameStatusToLose() {
@@ -124,29 +130,20 @@ public class MinesweeperGame {
         gameStatus = 1;
     }
 
-    // row 와 col은 한쌍으로 움직이기 때문에 내부 col의 반복문을 함수로 빼는건 복잡도가 오히려 늘어난다.
-//    private static boolean isAllCellOpened() {
-//        boolean isAllOpened = true;
-//        for (int row = 0; row < BOARD_ROW_SIZE; row++) {
-//            for (int col = 0; col < BOARD_COL_SIZE; col++) {
-//                if (BOARD[row][col].equals(CLOSED_CELL_SIGN)) {
-//                    isAllOpened = false;
-//                }
-//            }
-//        }
-//        return isAllOpened;
-//    }
-
-    //Arrays.stream(array)를 호출하면, 배열 전체를 처리하는 것이 아니라 **바로 상위 배열(1차원 배열)**의 각 요소들을 스트림으로 변환합니다.
-    // 평탄화해서 2중배열의 모든 원소들을 stream으로 만든거다.
     private static boolean isAllCellOpened() {
         return Arrays.stream(BOARD)
             .flatMap(Arrays::stream)
-            .noneMatch(cell -> cell.equals(CLOSED_CELL_SIGN));
+            .noneMatch(CLOSED_CELL_SIGN::equals);
+        // 상수.equals를 통해서 NPE방지
     }
 
     private static int convertRowFrom(char cellInputRow) {
-        return Character.getNumericValue(cellInputRow) - 1;
+        int rowIndex = Character.getNumericValue(cellInputRow) - 1;
+        if (rowIndex >= BOARD_ROW_SIZE) {
+            throw new AppException("잘못된 입력입니다.");
+        }
+
+        return rowIndex;
     }
 
     private static int convertColFrom(char cellInputCol) {
@@ -172,7 +169,7 @@ public class MinesweeperGame {
             case 'j':
                 return 9;
             default:
-                return -1;
+                throw new AppException("잘못된 입력입니다.");
         }
     }
 
@@ -201,14 +198,12 @@ public class MinesweeperGame {
             LAND_MINES[row][col] = true;
         }
 
-        // 애초에 부정문으로만 조건을 검사할 필요가 없었다.
         for (int row = 0; row < BOARD_ROW_SIZE; row++) {
             for (int col = 0; col < BOARD_COL_SIZE; col++) {
                 if (isLandMineCell(row, col)) {
                     NEARBY_LAND_MINE_COUNTS[row][col] = 0;
                     continue;
                 }
-
                 int count = countNearbyLandMines(row, col);
                 NEARBY_LAND_MINE_COUNTS[row][col] = count;
             }
