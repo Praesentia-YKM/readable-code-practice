@@ -1,6 +1,6 @@
 package cleancode.minesweeper.tobe;
 
-import cleancode.minesweeper.tobe.Game.GameRunnable;
+import cleancode.minesweeper.tobe.game.GameRunnable;
 
 /**
  * ISP 위반
