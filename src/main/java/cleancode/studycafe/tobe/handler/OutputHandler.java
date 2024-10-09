@@ -1,9 +1,10 @@
-package cleancode.studycafe.tobe.io;
+package cleancode.studycafe.tobe.handler;
 
 import cleancode.studycafe.tobe.model.StudyCafeLockerPass;
 import cleancode.studycafe.tobe.model.StudyCafePass;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class OutputHandler {
 
@@ -25,10 +26,12 @@ public class OutputHandler {
     public void showPassListForSelection(List<StudyCafePass> passes) {
         System.out.println();
         System.out.println("이용권 목록");
-        for (int index = 0; index < passes.size(); index++) {
-            StudyCafePass pass = passes.get(index);
-            System.out.println(String.format("%s. ", index + 1) + pass.display());
-        }
+
+        IntStream.range(0, passes.size())
+            .forEach(index -> {
+                StudyCafePass pass = passes.get(index);
+                System.out.println(String.format("%d. %s", index + 1, pass.display()));
+            });
     }
 
     public void askLockerPass(StudyCafeLockerPass lockerPass) {
@@ -37,7 +40,6 @@ public class OutputHandler {
             "사물함을 이용하시겠습니까? (%s)",
             lockerPass.display()
         );
-
         System.out.println(askMessage);
         System.out.println("1. 예 | 2. 아니오");
     }
@@ -50,19 +52,27 @@ public class OutputHandler {
             System.out.println("사물함: " + lockerPass.display());
         }
 
-        double discountRate = selectedPass.getDiscountRate();
-        int discountPrice = (int) (selectedPass.getPrice() * discountRate);
+        int discountPrice = calculateDiscountPrice(selectedPass);
         if (discountPrice > 0) {
             System.out.println("이벤트 할인 금액: " + discountPrice + "원");
         }
 
-        int totalPrice = selectedPass.getPrice() - discountPrice + (lockerPass != null ? lockerPass.getPrice() : 0);
+        int totalPrice = calculateTotalPrice(selectedPass, lockerPass, discountPrice);
         System.out.println("총 결제 금액: " + totalPrice + "원");
         System.out.println();
+    }
+
+    private int calculateDiscountPrice(StudyCafePass selectedPass) {
+        double discountRate = selectedPass.getDiscountRate();
+        return (int) (selectedPass.getPrice() * discountRate);
+    }
+
+    private int calculateTotalPrice(StudyCafePass selectedPass, StudyCafeLockerPass lockerPass, int discountPrice) {
+        return selectedPass.getPrice() - discountPrice + (lockerPass != null ? lockerPass.getPrice() : 0);
     }
 
     public void showSimpleMessage(String message) {
         System.out.println(message);
     }
-
 }
+

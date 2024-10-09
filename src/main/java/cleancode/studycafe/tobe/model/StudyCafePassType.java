@@ -12,4 +12,7 @@ public enum StudyCafePassType {
         this.description = description;
     }
 
+    public String getDescription(int duration, int price) {
+        return String.format("%s %d권 - %d원", this.description, duration, price);
+    }
 }
